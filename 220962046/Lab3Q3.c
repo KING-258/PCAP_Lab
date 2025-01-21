@@ -1,36 +1,34 @@
-#include <mpi.h>
 #include <stdio.h>
+#include <mpi.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-int is_vowel(char c) {
-    c = tolower(c);
-    return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
-}
-int main(int argc, char** argv) {
-    int r, s, len, local_count = 0, total_count = 0;
-    char* str = NULL;
+int main(int argc, char **argv){
+    int r, s, store_size, vow = 0, ans;
+    char *s1 = (char *)malloc(1000 * sizeof(char));
+    char *store;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &r);
     MPI_Comm_size(MPI_COMM_WORLD, &s);
-    if(r == 0){
-        char input[1000];
-        scanf("%s", input);
-        len = strlen(input);
-        str = input;
+    if (r == 0)
+    {
+        printf("Enter the Word : ");
+        scanf("%s", s1);
+        store_size = strlen(s1) / s;
     }
-    MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    int chunk = len / s;
-    char* local_str = (char*)malloc((chunk + 1) * sizeof(char));
-    MPI_Scatter(str, chunk, MPI_CHAR, local_str, chunk, MPI_CHAR, 0, MPI_COMM_WORLD);
-    local_str[chunk] = '\0';
-    for(int i = 0; i < chunk; i++){
-        if (!is_vowel(local_str[i])) local_count++;
+    MPI_Bcast(&store_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    store = (char *)malloc(store_size * sizeof(char));
+    MPI_Scatter(s1, store_size, MPI_CHAR, store, store_size, MPI_CHAR, 0, MPI_COMM_WORLD);
+    for (int i = 0; i < store_size; ++i)
+    {
+        if (store[i] == 'a' || store[i] == 'e' || store[i] == 'i' || store[i] == 'o' || store[i] == 'u' || store[i] == 'A' || store[i] == 'E' || store[i] == 'I' || store[i] == 'O' || store[i] == 'U')
+        {
+            vow += 1;
+        }
     }
-    MPI_Reduce(&local_count, &total_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    if(r == 0){
-        printf("%d\n", total_count);
+    printf("%d vowels from rank %d\n", vow, r);
+    MPI_Reduce(&vow, &ans, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (r == 0){
+        printf("%d is the answer\n", ans);
     }
     MPI_Finalize();
-    return 0;
 }
